@@ -12,11 +12,6 @@ entity ascon_round is
 end ascon_round;
 
 architecture behavioral of ascon_round is
-    
-    -- Sinyal internal untuk menyimpan nilai state
-    signal t : ascon_state_t;
-    signal s_temp : ascon_state_t;
-
 begin
     -- Sambungkan input state ke sinyal temporer untuk diproses
     s_temp <= state_in;
@@ -31,14 +26,26 @@ begin
         v_s := state_in;
         
         -- --- 1. Addition of Round Constant (ARC) ---
-        v_s(2) := v_s(2) xor ("00000000000000000000000000000000000000000000000000000000" & round_c);
+        v_s(2)(7 downto 0) := v_s(2)(7 downto 0) xor round_c;
 
         -- --- 2. Substitution Layer (S-Box) ---
-        v_t(0) := (v_s(4) and v_s(1)) xor v_s(3) xor ((not v_s(2)) and v_s(1)) xor v_s(2) xor (v_s(1) and v_s(0)) xor v_s(1) xor v_s(0);
-        v_t(1) := v_s(4) xor ((v_s(3)) and v_s(2)) xor (v_s(3) and v_s(1)) xor v_s(3) xor (v_s(2) and v_s(1)) xor v_s(2) xor v_s(1) xor v_s(0);
-        v_t(2) := (v_s(4) and v_s(3)) xor v_s(4) xor v_s(2) xor v_s(1) xor x"0000000000000001";
-        v_t(3) := (v_s(4) and v_s(0)) xor v_s(4) xor (v_s(3) and v_s(0)) xor v_s(3) xor v_s(2) xor v_s(1) xor v_s(0);
-        v_t(4) := (v_s(4) and v_s(1)) xor v_s(4) xor v_s(3) xor (v_s(1) and v_s(0)) xor v_s(1);
+        -- A. Linear transformation start
+        v_s(0) := v_s(0) xor v_s(4);
+        v_s(4) := v_s(4) xor v_s(3);
+        v_s(2) := v_s(2) xor v_s(1);
+
+        -- B. Non-linear layer
+        v_t(0) := v_s(0) xor ((not v_s(1)) and v_s(2));
+        v_t(1) := v_s(1) xor ((not v_s(2)) and v_s(3));
+        v_t(2) := v_s(2) xor ((not v_s(3)) and v_s(4));
+        v_t(3) := v_s(3) xor ((not v_s(4)) and v_s(0));
+        v_t(4) := v_s(4) xor ((not v_s(0)) and v_s(1));
+
+        -- C. Linear transformation end
+        v_t(1) := v_t(1) xor v_t(0);
+        v_t(0) := v_t(0) xor v_t(4);
+        v_t(3) := v_t(3) xor v_t(2);
+        v_t(2) := not v_t(2); -- This handles the "xor 1" requirement correctly
         
         -- --- 3. Linear Diffusion Layer ---
         v_s(0) := v_t(0) xor ROTR(v_t(0), ROR_C0_19) xor ROTR(v_t(0), ROR_C0_28);
