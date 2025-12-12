@@ -38,21 +38,6 @@ architecture structural of ascon_p12 is
     type state_type is (IDLE, ROUND_EXEC, FINISH);
     signal p12_state : state_type;
     
-    -- Konversi Unsigned ke String (untuk debugging)
-    function to_string(A: unsigned) return string is
-        alias V : unsigned(A'range) is A;
-        variable Result: string(1 to 4);
-    begin
-        for I in 0 to 3 loop
-            if V(I) = '1' then
-                Result(4-I) := '1';
-            else
-                Result(4-I) := '0';
-            end if;
-        end loop;
-        return Result;
-    end function to_string;
-    
 begin
     -- Instansiasi Komponen Round Function
     U_ASCON_ROUND: ascon_round
@@ -80,7 +65,6 @@ begin
                     when IDLE =>
                         if enable = '1' then
                             -- Mulai P12
-                            report "DEBUG: P12 Start. Transition from IDLE to ROUND_EXEC." severity note;
                             p12_state     <= ROUND_EXEC;
                             round_counter <= (others => '0'); -- Putaran ke-0
                             current_state <= state_in;
@@ -89,9 +73,6 @@ begin
                         end if;
 
                     when ROUND_EXEC =>
-                        
-                        report "DEBUG: ROUND " & integer'image(to_integer(round_counter)) & " Started." severity note;
-                        
                         -- Round Constant untuk putaran saat ini
                         round_c_sig <= ROUND_CONSTANTS_P12(
                             (11 - to_integer(round_counter))*8 + 7 downto 
@@ -103,7 +84,6 @@ begin
                         
                         -- Round Counter
                         if round_counter = 11 then -- Putaran ke-11 selesai, total 12 putaran
-                            report "DEBUG: ROUND 11 Complete. Transition to FINISH." severity note;
                             p12_state <= FINISH;
                         else
                             round_counter <= round_counter + 1;
@@ -113,7 +93,6 @@ begin
                         
                     when FINISH =>
                         if enable = '0' then
-                            report "DEBUG: FINISH State. Transition back to IDLE." severity note;
                             p12_state <= IDLE;
                         end if;
                 end case;
