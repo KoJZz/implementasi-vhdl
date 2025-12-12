@@ -13,9 +13,6 @@ end ascon_round;
 
 architecture behavioral of ascon_round is
 begin
-    -- Sambungkan input state ke sinyal temporer untuk diproses
-    s_temp <= state_in;
-
     process(state_in, round_c)
         
         variable v_t : ascon_state_t;
