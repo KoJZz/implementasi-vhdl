@@ -5,53 +5,65 @@ use work.ascon_constants.all;
 
 entity ascon_round is
     port (
-        state_in : in  ascon_state_t;
-        round_c  : in  std_logic_vector(7 downto 0);
-        state_out: out ascon_state_t
+        state_in  : in  ascon_state_t;
+        round_c   : in  std_logic_vector(7 downto 0);
+        state_out : out ascon_state_t
     );
 end ascon_round;
 
 architecture behavioral of ascon_round is
-begin
-    process(state_in, round_c)
-        
-        variable v_t : ascon_state_t;
-        variable v_s : ascon_state_t;
-        
+
+    -- Local Rotate Right Function to ensure correct bit ordering
+    function rotr64(x : std_logic_vector; n : integer) return std_logic_vector is
     begin
-        -- Muat variable dari input langsung
-        v_s := state_in;
-        
-        -- --- 1. Addition of Round Constant (ARC) ---
-        v_s(2)(7 downto 0) := v_s(2)(7 downto 0) xor round_c;
+        -- Rotates right: LSB moves to MSB position
+        return x(n-1 downto 0) & x(63 downto n);
+    end function;
 
-        -- --- 2. Substitution Layer (S-Box) ---
-        -- A. Linear transformation start
-        v_s(0) := v_s(0) xor v_s(4);
-        v_s(4) := v_s(4) xor v_s(3);
-        v_s(2) := v_s(2) xor v_s(1);
+begin
 
-        -- B. Non-linear layer
-        v_t(0) := v_s(0) xor ((not v_s(1)) and v_s(2));
-        v_t(1) := v_s(1) xor ((not v_s(2)) and v_s(3));
-        v_t(2) := v_s(2) xor ((not v_s(3)) and v_s(4));
-        v_t(3) := v_s(3) xor ((not v_s(4)) and v_s(0));
-        v_t(4) := v_s(4) xor ((not v_s(0)) and v_s(1));
+    process(state_in, round_c)
+        variable x  : ascon_state_t; 
+        variable t  : ascon_state_t;
+    begin
+        -- 1. Load Input
+        x := state_in;
 
-        -- C. Linear transformation end
-        v_t(1) := v_t(1) xor v_t(0);
-        v_t(0) := v_t(0) xor v_t(4);
-        v_t(3) := v_t(3) xor v_t(2);
-        v_t(2) := not v_t(2); -- This handles the "xor 1" requirement correctly
-        
-        -- --- 3. Linear Diffusion Layer ---
-        v_s(0) := v_t(0) xor ROTR(v_t(0), ROR_C0_19) xor ROTR(v_t(0), ROR_C0_28);
-        v_s(1) := v_t(1) xor ROTR(v_t(1), ROR_C1_61) xor ROTR(v_t(1), ROR_C1_39);
-        v_s(2) := v_t(2) xor ROTR(v_t(2), ROR_C2_1)  xor ROTR(v_t(2), ROR_C2_6);
-        v_s(3) := v_t(3) xor ROTR(v_t(3), ROR_C3_10) xor ROTR(v_t(3), ROR_C3_17);
-        v_s(4) := v_t(4) xor ROTR(v_t(4), ROR_C4_7)  xor ROTR(v_t(4), ROR_C4_41);
+        -- 2. Addition of Round Constant (ARC)
+        -- Ascon adds constant to the LEAST Significant Byte of x2 (Bits 7..0)
+        x(2)(7 downto 0) := x(2)(7 downto 0) xor round_c;
 
-        -- Output assigned immediately (Combinatorial)
-        state_out <= v_s;
+        -- 3. Substitution Layer (S-Box)
+        -- Step A: Linear Start
+        x(0) := x(0) xor x(4);
+        x(4) := x(4) xor x(3);
+        x(2) := x(2) xor x(1);
+
+        -- Step B: Non-linear (Chi)
+        -- We calculate all 't' values based on the 'x' values from Step A
+        t(0) := x(0) xor ((not x(1)) and x(2));
+        t(1) := x(1) xor ((not x(2)) and x(3));
+        t(2) := x(2) xor ((not x(3)) and x(4));
+        t(3) := x(3) xor ((not x(4)) and x(0));
+        t(4) := x(4) xor ((not x(0)) and x(1));
+
+        -- Step C: Linear End
+        -- Note: These must follow the C reference sequence strictly
+        t(1) := t(1) xor t(0);
+        t(0) := t(0) xor t(4);
+        t(3) := t(3) xor t(2);
+        t(2) := not t(2);
+
+        -- 4. Linear Diffusion Layer
+        -- Apply rotations to the result of the S-Box (t)
+        x(0) := t(0) xor rotr64(t(0), 19) xor rotr64(t(0), 28);
+        x(1) := t(1) xor rotr64(t(1), 61) xor rotr64(t(1), 39);
+        x(2) := t(2) xor rotr64(t(2), 1)  xor rotr64(t(2), 6);
+        x(3) := t(3) xor rotr64(t(3), 10) xor rotr64(t(3), 17);
+        x(4) := t(4) xor rotr64(t(4), 7)  xor rotr64(t(4), 41);
+
+        -- Output
+        state_out <= x;
     end process;
+
 end behavioral;
