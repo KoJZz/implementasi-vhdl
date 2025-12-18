@@ -29,7 +29,7 @@ package ascon_constants is
     
     -- Konstanta IV dan Round Constants
     constant ROUND_CONSTANTS_P12 : std_logic_vector(95 downto 0) := x"F0E1D2C3B4A5968778695A4B";
-    constant ASCON_XOF_IV_VAL : ascon_word_t := x"0000080000cc0003";
+    constant ASCON_XOF_IV_VAL : ascon_word_t := x"0000080000CC0003";
     
     -- Nilai Ekspektasi setelah P12 dari IV Ascon-XOF yang dimuat
     -- (Nilai ini diverifikasi berdasarkan spesifikasi Ascon)
