@@ -38,17 +38,14 @@ begin
     process(mux_select, data_from_permutation, data_from_absorbing, reg_current)
     begin
         case mux_select is
-            when "00" => 
-                mux_output <= ASCON_IV; -- pilih IV
-                
-            when "10" => 
-                mux_output <= data_from_permutation; -- pilih hasil ascon-p
-                
-            when "01" => 
-                mux_output <= data_from_absorbing; -- pilih hasil absorbing
-                
+            when "00" =>
+                mux_output <= ASCON_IV;
+            when "10" =>
+                mux_output <= data_from_permutation;
+            when "01" =>
+                mux_output <= data_from_absorbing;
             when others =>
-                mux_output <= reg_current; 
+                mux_output <= ASCON_IV;
         end case;
     end process;
 
@@ -57,9 +54,9 @@ begin
     begin
         if rising_edge(clk) then
             if reset = '1' then
-                reg_current <= (others => (others => '0'));
+                reg_current <= ASCON_IV;
             elsif enable = '1' then
-                reg_current <= mux_output; -- Load the value selected by MUX
+                reg_current <= mux_output;
             end if;
         end if;
     end process;
