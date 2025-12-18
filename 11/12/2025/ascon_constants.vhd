@@ -38,7 +38,7 @@ package ascon_constants is
     constant EXPECTED_X2 : ascon_word_t := x"13E5317E08DE90C4";
     constant EXPECTED_X3 : ascon_word_t := x"B1D1DFF7E2B4B282";
     constant EXPECTED_X4 : ascon_word_t := x"22757262D4A27B66";
-    
+		
     -- Function Declaration
     function ROTR(
         A : std_logic_vector;

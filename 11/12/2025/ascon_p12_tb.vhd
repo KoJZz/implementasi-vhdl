@@ -3,10 +3,10 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.ascon_constants.all;
 
-entity tb_ascon_p12_wrapper is
-end tb_ascon_p12_wrapper;
+entity ascon_p12_tb is
+end ascon_p12_tb;
 
-architecture behavior of tb_ascon_p12_wrapper is
+architecture behavior of ascon_p12_tb is
 
     component ascon_p12_wrapper
         port (
