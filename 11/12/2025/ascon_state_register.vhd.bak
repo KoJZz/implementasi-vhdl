@@ -1,7 +1,6 @@
 -- definisi library yang digunakan
 library ieee;
 use ieee.std_logic_1164.all;
-use work.ascon_constants.all;
 
 -- definisi entity
 entity ascon_state_register is
@@ -10,32 +9,27 @@ entity ascon_state_register is
         clk        : in std_logic;
         reset      : in std_logic; 
         enable     : in std_logic; 
-        mux_select    : in std_logic_vector(1 downto 0); -- 00: Init, 10: Permutation, 01: Absorb
+        mux_select    : in std_logic_vector(1 downto 0); -- 00: Init, 01: Permutation, 10: Absorb
         
         -- input dari ascon-p dan hasil padding
-        data_from_permutation : in ascon_state_t;
-        data_from_absorbing   : in ascon_state_t;
+        data_from_permutation : in std_logic_vector(319 downto 0);
+        data_from_absorbing   : in std_logic_vector(319 downto 0);
         
         -- output
-        current_state_out     : out ascon_state_t;
-        rate_out              : out ascon_word_t
+        current_state_out     : out std_logic_vector(319 downto 0);
+        rate_out              : out std_logic_vector(63 downto 0)
     );
 end entity;
 
 architecture rtl of ascon_state_register is
-	constant ASCON_IV : ascon_state_t := (
-		 0 => x"0000080000cc0003", -- x0 (LSB word)
-		 1 => (others => '0'),
-		 2 => (others => '0'),
-		 3 => (others => '0'),
-		 4 => (others => '0')
-	);
-    signal reg_current : ascon_state_t;
-    signal mux_output  : ascon_state_t;
+    constant ASCON_IV : std_logic_vector(319 downto 0) := (319 downto 64 => '0') & x"0000080000cc0003"; -- IV untuk ascon-xof
+
+    signal reg_current : std_logic_vector(319 downto 0);
+    signal mux_output  : std_logic_vector(319 downto 0);
 
 begin
     -- MUX
-    process(mux_select, data_from_permutation, data_from_absorbing, reg_current)
+    process(mux_select, data_from_permutation, data_from_absorbing)
     begin
         case mux_select is
             when "00" => 
@@ -57,7 +51,7 @@ begin
     begin
         if rising_edge(clk) then
             if reset = '1' then
-                reg_current <= (others => (others => '0'));
+                reg_current <= (others => '0');
             elsif enable = '1' then
                 reg_current <= mux_output; -- Load the value selected by MUX
             end if;
@@ -65,7 +59,7 @@ begin
     end process;
 
     -- output
-    rate_out <= reg_current(0); -- output hanya rate
+    rate_out <= reg_current(63 downto 0); -- output hanya rate
     current_state_out <= reg_current; -- output seluruh state
 
 end architecture;

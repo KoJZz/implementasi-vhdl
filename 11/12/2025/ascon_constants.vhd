@@ -44,6 +44,10 @@ package ascon_constants is
         A : std_logic_vector;
         N : natural
     ) return std_logic_vector;
+	function xor_state(
+		a : ascon_state_t;
+		b : ascon_state_t
+	) return ascon_state_t;
 end package ascon_constants;
 
 -- ====================================================

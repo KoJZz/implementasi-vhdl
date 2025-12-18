@@ -29,15 +29,16 @@ entity datapath is
 		done_output : out std_logic;
 		done_padding : out std_logic;
 		done_ascon : out std_logic;
-		cnt_8 : out std_logic_vector (3 downto 0)
+		cnt_8 : out std_logic_vector (3 downto 0);
+		
+		debug_state_x0 : out ascon_word_t
 	);
 end entity;
 
 -- definisi architecture
 architecture path of datapath is
 -- definsi signal
-signal zero_out_320, absorbed_data : std_logic_vector(319 downto 0);
-signal state_reg_out, ascon_p_out : ascon_state_t;
+signal absorbed_data, zero_out_320, state_reg_out, ascon_p_out : ascon_state_t;
 signal pad_out_64, message_reg_out, state_rate_out : std_logic_vector (63 downto 0);
 signal rx_byte_count: std_logic_vector (3 downto 0);
 signal Reset, default_en, ascon_ready : std_logic;
@@ -56,17 +57,13 @@ component ascon_p12 is
 end component;
 
 component Zero_Register_320bit is
-    generic (
-        DATA_WIDTH : integer := 320;
-        LSB_WIDTH  : integer := 64  
-    );
     port (
         clk         : in  std_logic;
         reset       : in  std_logic; 
         En          : in  std_logic; 
-        data_in_64  : in  std_logic_vector(LSB_WIDTH - 1 downto 0); 
+        data_in_64  : in  ascon_word_t; 
         
-        data_out_320 : out std_logic_vector(DATA_WIDTH - 1 downto 0) 
+        state_out : out ascon_state_t 
     );
 end component;
 
@@ -136,18 +133,19 @@ component ascon_state_register is
         enable     : in std_logic; 
         mux_select    : in std_logic_vector(1 downto 0); -- 00: Init, 01: Permutation, 10: Absorb
         
-        data_from_permutation : in std_logic_vector(319 downto 0);
-        data_from_absorbing   : in std_logic_vector(319 downto 0);
+        data_from_permutation : in ascon_state_t;
+        data_from_absorbing   : in ascon_state_t;
         
-        current_state_out     : out std_logic_vector(319 downto 0);
-		rate_out              : out std_logic_vector(63 downto 0)
+        current_state_out     : out ascon_state_t;
+		rate_out              : out ascon_word_t
     );
 end component;
 
 begin
 default_en <= '1';
 Reset <= '0';
-absorbed_data <= zero_out_320 xor state_reg_out;
+absorbed_data <= xor_state(zero_out_320, state_reg_out);
+debug_state_x0 <= state_reg_out(0);
 
 -- port mapping components
 p12 : ascon_p12
@@ -162,11 +160,11 @@ p12 : ascon_p12
 
 zero_reg : Zero_Register_320bit
 	port map(
-		clk         =>Clk,
-		reset       =>Reset,
-		En          =>default_en,
-		data_in_64  =>pad_out_64,
-		data_out_320 =>zero_out_320
+		clk         => Clk,
+		reset       => Reset,
+		En          => default_en,
+		data_in_64  => pad_out_64,
+		state_out => zero_out_320
 	);
 	
 silence : SilenceTimer

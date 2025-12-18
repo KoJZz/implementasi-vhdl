@@ -3,7 +3,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use work.ascon_constants.all;  -- contains ascon_state_t, ascon_word_t
 
-entity Zero_Register_AsconState is
+entity Zero_Register_320bit is
     port (
         clk        : in  std_logic;
         reset      : in  std_logic;
@@ -17,7 +17,7 @@ entity Zero_Register_AsconState is
     );
 end entity;
 
-architecture rtl of Zero_Register_AsconState is
+architecture rtl of Zero_Register_320bit is
     signal state_reg : ascon_state_t;
 begin
 
