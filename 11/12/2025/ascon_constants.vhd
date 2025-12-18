@@ -66,5 +66,18 @@ package body ascon_constants is
             return A(S-1 downto 0) & A(LEN-1 downto S);
         end if;
     end function ROTR;
+	 
+	function xor_state(
+		a : ascon_state_t;
+		b : ascon_state_t
+	) return ascon_state_t is
+		variable r : ascon_state_t;
+	begin
+		for i in a'range loop
+			r(i) := a(i) xor b(i);
+		end loop;
+	return r;
+	end function;
+
 
 end package body ascon_constants;

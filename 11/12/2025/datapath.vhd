@@ -2,6 +2,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.numeric_std.all;
+use work.ascon_constants.all;
 
 -- definisi entity
 entity datapath is
@@ -35,7 +36,8 @@ end entity;
 -- definisi architecture
 architecture path of datapath is
 -- definsi signal
-signal zero_out_320, state_reg_out, ascon_p_out : std_logic_vector(319 downto 0);
+signal zero_out_320, absorbed_data : std_logic_vector(319 downto 0);
+signal state_reg_out, ascon_p_out : ascon_state_t;
 signal pad_out_64, message_reg_out, state_rate_out : std_logic_vector (63 downto 0);
 signal rx_byte_count: std_logic_vector (3 downto 0);
 signal Reset, default_en, ascon_ready : std_logic;
@@ -46,9 +48,9 @@ component ascon_p12 is
         clk      : in  std_logic;
         rst      : in  std_logic;
         enable   : in  std_logic;      -- Mulai permutasi
-        state_in : in  std_logic_vector(319 downto 0);
+        state_in : in  ascon_state_t;
         
-        state_out: out std_logic_vector(319 downto 0);  -- State setelah P12
+        state_out: out ascon_state_t;  -- State setelah P12
         ready    : out std_logic       -- '1' ketika P12 selesai
     );
 end component;
@@ -84,7 +86,7 @@ end component;
 component Pad is
     Port (
         raw_buffer : in  STD_LOGIC_VECTOR (63 downto 0); 
-        byte_count : in  INTEGER range 0 to 8;           
+        byte_count : in  std_logic_vector(3 downto 0);           
         padded_out : out STD_LOGIC_VECTOR (63 downto 0)  
     );
 end component;
@@ -145,6 +147,7 @@ end component;
 begin
 default_en <= '1';
 Reset <= '0';
+absorbed_data <= zero_out_320 xor state_reg_out;
 
 -- port mapping components
 p12 : ascon_p12
@@ -153,7 +156,7 @@ p12 : ascon_p12
         rst      => Reset,
         enable   => default_en, 
         state_in => state_reg_out,
-        state_out=>ascon_p_out,  -- State setelah P12
+        state_out=> ascon_p_out,  -- State setelah P12
         ready    =>done_ascon 
 	);
 
@@ -177,7 +180,7 @@ silence : SilenceTimer
 padding : Pad
 	port map(
 		raw_buffer =>message_reg_out, 
-		byte_count => to_integer(unsigned(rx_byte_count)), 
+		byte_count => rx_byte_count, 
 		padded_out =>pad_out_64  
 	);
 	
@@ -230,7 +233,7 @@ state_reg : ascon_state_register
 		mux_select    =>mux_select, -- 00: Init, 01: Permutation, 10: Absorb
 
 		data_from_permutation =>ascon_p_out, -- add hasil ascon-p
-		data_from_absorbing   =>zero_out_320 xor state_reg_out,
+		data_from_absorbing   =>absorbed_data,
 
 		current_state_out     =>state_reg_out,
 		rate_out			  =>state_rate_out
