@@ -1,3 +1,27 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.ascon_constants.all;
+
+entity ascon_p12_wrapper is
+    port (
+        clk         : in  std_logic;
+        rst         : in  std_logic;
+        
+        -- Control Signals
+        start       : in  std_logic;                    -- Trigger start of operation
+        mode_load   : in  std_logic;                    -- '1' = Load Data, '0' = Read Result
+        
+        -- Data Interface (reduced to 64-bit to save pins)
+        data_in     : in  std_logic_vector(63 downto 0);
+        data_out    : out std_logic_vector(63 downto 0);
+        
+        -- Status Signals
+        busy        : out std_logic;
+        done        : out std_logic                     -- Pulse when P12 is complete
+    );
+end ascon_p12_wrapper;
+
 architecture rtl of ascon_p12_wrapper is
 
     component ascon_p12
