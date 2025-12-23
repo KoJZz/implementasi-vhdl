@@ -21,11 +21,7 @@ begin
             cnt <= (others => '0');
 		elsif rising_edge(Clk) then
 			if En_msg = '1' then
-				if cnt /= "1000" then
-					cnt <= cnt + 1;
-				else
-					cnt <= (others => '0'); -- Resets once it reaches 1000
-				end if;
+				cnt <= cnt + 1;	
 			end if;
 		end if;
 	end process;

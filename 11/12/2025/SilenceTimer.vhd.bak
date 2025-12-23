@@ -4,7 +4,7 @@ use IEEE.numeric_std.all;
 
 entity SilenceTimer is
     generic (
-        MAX_COUNT : unsigned(31 downto 0) := to_unsigned(10, 32) --100000 
+        MAX_COUNT : unsigned(31 downto 0) := to_unsigned(100000, 32)  
         -- 100,000 clock = 1 ms @ 100 MHz
     );
     port (

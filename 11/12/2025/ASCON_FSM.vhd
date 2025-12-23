@@ -16,8 +16,10 @@ entity ASCON_FSM is
         done_padding    : in  std_logic;
         tx_ready        : in  std_logic;
         squeezing_done  : in  std_logic;
+		  msg_count 		: in  std_logic_vector (3 downto 0); -- added buat mekanik done padding dari rx
 
         -- Control outputs
+		  done_pad_fromRX : out std_logic;
         mux_select      : out std_logic_vector(1 downto 0);
         en_ascon        : out std_logic;
         rst_8           : out std_logic;
@@ -92,7 +94,7 @@ begin
 
             when ASCON_P12_WAIT =>
                 if p12_done = '1' then
-                    if done_padding = '1' then
+                    if message_end = '1' then -- tadinya done_padding = '1'
                         Next_State <= SQUEEZING;
                     else
                         Next_State <= RX_MESSAGE;
@@ -100,8 +102,8 @@ begin
                 end if;
 
             when RX_MESSAGE =>
-                if message_end = '1' then
-                    Next_State <= PADDING;
+                if message_end = '1' OR msg_count = "1000" then
+                    Next_State <= ASCON_P12_START; --tadinya PADDING, tp baru inget state PADDING ga perlu
                 end if;
 
             when PADDING =>
@@ -118,7 +120,7 @@ begin
     -- ====================================================
     -- OUTPUT LOGIC
     -- ====================================================
-    process (Current_State, Next_State, tx_ready)
+    process (Current_State, Next_State, tx_ready, msg_count, message_end)
     begin
         -- Defaults
         mux_select  <= "11"; -- HOLD STATE
@@ -131,6 +133,7 @@ begin
         appl_pad    <= '0';
         transmit    <= '0';
         en_output   <= '0';
+		  done_pad_fromRX <= '0';
 
         case Current_State is
 
@@ -153,8 +156,18 @@ begin
                 end if;
 
             when RX_MESSAGE =>
-                mux_select <= "01"; -- Absorb
+                --mux_select <= "01"; -- Absorb
                 receive    <= '1';
+					 if message_end = '1' then -- NYOBA
+						mux_select <= "11"; -- Absorb
+						if msg_count = "1000" then
+							done_pad_fromRX <= '1';
+						 end if;
+					 else
+						mux_select <= "01"; -- Absorb
+					 end if;
+					 
+					 
 
             when PADDING =>
                 mux_select <= "01";

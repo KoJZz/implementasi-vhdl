@@ -1,4 +1,4 @@
--- definisi library yang digunakan
+ -- definisi library yang digunakan
 library ieee;
 use ieee.std_logic_1164.all;
 use work.ascon_constants.all;
@@ -7,6 +7,7 @@ use work.ascon_constants.all;
 entity ascon_state_register is
     port (
         -- control signal
+		  done_pad_fromRX : in std_logic; --DIUPDATE done_pad dari RX (message kelipatan 64)
         clk        : in std_logic;
         reset      : in std_logic; 
         enable     : in std_logic; 
@@ -45,21 +46,25 @@ begin
             when "01" =>
                 mux_output <= data_from_absorbing;
             when others =>
-                mux_output <= ASCON_IV;
+                mux_output <= reg_current;
         end case;
     end process;
 
     -- Register
-    process(clk)
+    process(clk, done_pad_fromRX)
     begin
         if rising_edge(clk) then
             if reset = '1' then
                 reg_current <= ASCON_IV;
             elsif enable = '1' then
                 reg_current <= mux_output;
+					 if done_pad_fromRX = '1' then -- DIUPDATE buat pad message kelipatan 64
+						reg_current(0)(0) <= not reg_current(0)(0);
+					 end if;
             end if;
         end if;
     end process;
+	 
 
     -- output
     rate_out <= reg_current(0); -- output hanya rate

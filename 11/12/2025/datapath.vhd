@@ -10,6 +10,7 @@ entity datapath is
 		Clk	: in std_logic;
 		out_length : in std_logic_vector (7 downto 0);
 		
+		-- input dari FSM/top
 		mux_select : in std_logic_vector (1 downto 0);
 		en_ascon : in std_logic;
 		rst_8 : in std_logic;
@@ -17,19 +18,21 @@ entity datapath is
 		rst_msg : in std_logic;
 		receive : in std_logic;
 		shift_tx : in std_logic;
-		appl_pad : in std_logic;
+		appl_pad : in std_logic; -- 
 		Transmit : in std_logic;
 		En_output : in std_logic;
+		done_pad_fromRX : in std_logic; -- dari FSM
 		
-		
+		-- out ke top/FSM
 		rx_done, tx_done : in std_logic;
 		in_rx : in std_logic_vector (7 downto 0);
 		out_tx : out std_logic_vector (7 downto 0);
 		done_message : out std_logic;
 		done_output : out std_logic;
-		done_padding : out std_logic;
+		done_padding_fromDP : out std_logic;
 		done_ascon : out std_logic;
 		cnt_8 : out std_logic_vector (3 downto 0);
+		msg_count 		: out std_logic_vector (3 downto 0); -- added buat mekanik done padding dari rx
 		
 		debug_state_x0 : out ascon_word_t
 	);
@@ -41,7 +44,7 @@ architecture path of datapath is
 signal absorbed_data, zero_out_320, state_reg_out, ascon_p_out : ascon_state_t;
 signal pad_out_64, message_reg_out, state_rate_out : std_logic_vector (63 downto 0);
 signal rx_byte_count: std_logic_vector (3 downto 0);
-signal Reset, default_en, ascon_ready : std_logic;
+signal Reset, default_en, ascon_ready, s_done_pad_fromPad : std_logic;
 
 -- definisi component yang digunakan
 component ascon_p12 is
@@ -82,8 +85,10 @@ end component;
 
 component Pad is
     Port (
+		  appl_pad : in std_logic;
         raw_buffer : in  STD_LOGIC_VECTOR (63 downto 0); 
-        byte_count : in  std_logic_vector(3 downto 0);           
+        byte_count : in  std_logic_vector(3 downto 0);
+		  done_pad : out std_logic; -- ngetes done pad		  
         padded_out : out STD_LOGIC_VECTOR (63 downto 0)  
     );
 end component;
@@ -128,6 +133,7 @@ end component;
 
 component ascon_state_register is
     port (
+		  done_pad_fromRX : in std_logic; --DIUPDATE done_pad dari RX (message kelipatan 64)
         clk        : in std_logic;
         reset      : in std_logic;
         enable     : in std_logic; 
@@ -137,7 +143,7 @@ component ascon_state_register is
         data_from_absorbing   : in ascon_state_t;
         
         current_state_out     : out ascon_state_t;
-		rate_out              : out ascon_word_t
+		  rate_out              : out ascon_word_t
     );
 end component;
 
@@ -146,13 +152,15 @@ default_en <= '1';
 Reset <= '0';
 absorbed_data <= xor_state(zero_out_320, state_reg_out);
 debug_state_x0 <= state_reg_out(0);
+done_padding_fromDP <= s_done_pad_fromPad XOR done_pad_fromRX;
+msg_count <= rx_byte_count; --panjang message
 
 -- port mapping components
 p12 : ascon_p12
 	port map(
 		clk      => Clk,
         rst      => Reset,
-        enable   => default_en, 
+        enable   => en_ascon, 
         state_in => state_reg_out,
         state_out=> ascon_p_out,  -- State setelah P12
         ready    =>done_ascon 
@@ -177,8 +185,10 @@ silence : SilenceTimer
 	
 padding : Pad
 	port map(
+	   appl_pad   => appl_pad,
 		raw_buffer =>message_reg_out, 
-		byte_count => rx_byte_count, 
+		byte_count => rx_byte_count,
+	   done_pad => s_done_pad_fromPad,
 		padded_out =>pad_out_64  
 	);
 	
@@ -203,7 +213,7 @@ msg_byte_cnt : message_byte_counter
 	port map(
 		Clk	=>Clk,
 		En_msg =>rx_done, 
-		rst_msg =>rst_msg, 
+		rst_msg =>rst_msg, -- belum ke-assign
 		out4 =>rx_byte_count
 	);
 
@@ -225,6 +235,7 @@ downcounter : L_Downcounter
 
 state_reg : ascon_state_register
 	port map(
+	   done_pad_fromRX => done_pad_fromRX, -- DIUPATE buat pad kelipatan 64
 		clk        =>Clk,
 		reset      =>Reset,
 		enable     =>default_en, 
