@@ -22,6 +22,7 @@ entity datapath is
 		Transmit : in std_logic;
 		En_output : in std_logic;
 		done_pad_fromRX : in std_logic; -- dari FSM
+		en_state_reg : in std_logic; -- dari FSM buat enable state_reg
 		
 		-- out ke top/FSM
 		rx_done, tx_done : in std_logic;
@@ -238,7 +239,7 @@ state_reg : ascon_state_register
 	   done_pad_fromRX => done_pad_fromRX, -- DIUPATE buat pad kelipatan 64
 		clk        =>Clk,
 		reset      =>Reset,
-		enable     =>default_en, 
+		enable     =>en_state_reg, 
 		mux_select    =>mux_select, -- 00: Init, 01: Permutation, 10: Absorb
 
 		data_from_permutation =>ascon_p_out, -- add hasil ascon-p

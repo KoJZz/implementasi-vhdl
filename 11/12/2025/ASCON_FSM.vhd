@@ -19,6 +19,7 @@ entity ASCON_FSM is
 		  msg_count 		: in  std_logic_vector (3 downto 0); -- added buat mekanik done padding dari rx
 
         -- Control outputs
+		  en_state_reg		: out std_logic; --enable state register ketika msg_count = 8/end message saat RX_MESSAGE. Selain state itu selalu 1
 		  done_pad_fromRX : out std_logic;
         mux_select      : out std_logic_vector(1 downto 0);
         en_ascon        : out std_logic;
@@ -123,6 +124,7 @@ begin
     process (Current_State, Next_State, tx_ready, msg_count, message_end)
     begin
         -- Defaults
+		  en_state_reg <= '1';
         mux_select  <= "11"; -- HOLD STATE
         en_ascon    <= '0';
         rst_8       <= '0';
@@ -159,11 +161,17 @@ begin
                 --mux_select <= "01"; -- Absorb
                 receive    <= '1';
 					 if message_end = '1' then -- NYOBA
-						mux_select <= "11"; -- Absorb
+					   en_state_reg <= '1'; -- kalo message_end enable state reg
+						mux_select <= "11"; -- hold
 						if msg_count = "1000" then
-							done_pad_fromRX <= '1';
-						 end if;
+							done_pad_fromRX <= '1'; 
+						end if;
 					 else
+					   if msg_count = "1000" then
+							en_state_reg <= '1'; -- enable state reg kalau 8 byte
+						else
+							en_state_reg <= '0'; -- disable sampai 8 byte
+						end if;
 						mux_select <= "01"; -- Absorb
 					 end if;
 					 
