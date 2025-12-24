@@ -62,7 +62,7 @@ end component;
 
 component Zero_Register_320bit is
     port (
-        clk         : in  std_logic;
+        --clk         : in  std_logic;
         reset       : in  std_logic; 
         En          : in  std_logic; 
         data_in_64  : in  ascon_word_t; 
@@ -169,7 +169,7 @@ p12 : ascon_p12
 
 zero_reg : Zero_Register_320bit
 	port map(
-		clk         => Clk,
+		--clk         => Clk, -- hapus ntar
 		reset       => Reset,
 		En          => default_en,
 		data_in_64  => pad_out_64,
