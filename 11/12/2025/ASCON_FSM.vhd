@@ -166,6 +166,7 @@ begin
 					 if Next_State = ASCON_P12_START then
 						rst_msg    <= '1'; -- DI SINI COBA KELUARIN OUTPUT
 						done_pad_fromRX <= '1';
+						--mux_select <= "01"; -- Absorb
 					 else
 						rst_msg <= '0';
 					 end if;

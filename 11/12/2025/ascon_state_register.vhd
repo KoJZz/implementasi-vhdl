@@ -51,7 +51,7 @@ begin
     end process;
 
     -- Register
-    process(clk, done_pad_fromRX)
+    process(clk)
     begin
         if rising_edge(clk) then
             if reset = '1' then
@@ -59,13 +59,12 @@ begin
             elsif enable = '1' then
                 reg_current <= mux_output;
 					 if done_pad_fromRX = '1' then -- DIUPDATE buat pad message kelipatan 64
-						reg_current(0)(0) <= not reg_current(0)(0);
+						reg_current(0)(0) <= not mux_output(0)(0);
 					 end if;
             end if;
         end if;
     end process;
 	 
-
     -- output
     rate_out <= reg_current(0); -- output hanya rate
     current_state_out <= reg_current; -- output seluruh state
