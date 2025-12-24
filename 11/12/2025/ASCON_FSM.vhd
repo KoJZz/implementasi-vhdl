@@ -96,7 +96,13 @@ begin
             when ASCON_P12_WAIT =>
                 if p12_done = '1' then
                     if message_end = '1' then -- tadinya done_padding = '1'
-                        Next_State <= SQUEEZING;
+								if msg_count /= "1000" then
+									Next_State <= SQUEEZING;
+								elsif msg_count = "1000" then
+									rst_msg    <= '1'; -- DI SINI COBA KELUARIN OUTPUT
+									done_pad_fromRX <= '1';
+									Next_State <= ASCON_P12_START;
+								end if;
                     else
                         Next_State <= RX_MESSAGE;
                     end if;
@@ -135,7 +141,7 @@ begin
         appl_pad    <= '0';
         transmit    <= '0';
         en_output   <= '0';
-		  done_pad_fromRX <= '0';
+		  --done_pad_fromRX <= '0';
 
         case Current_State is
 
@@ -148,7 +154,9 @@ begin
             when ASCON_P12_START =>
                 en_ascon   <= '1';  -- 1-cycle start pulse
                 rst_8      <= '1';
-                rst_msg    <= '1';
+					 if message_end /= '1' then
+						rst_msg    <= '1';
+					 end if;
                 mux_select <= "11"; -- HOLD
 
             when ASCON_P12_WAIT =>
@@ -160,19 +168,18 @@ begin
             when RX_MESSAGE =>
                 --mux_select <= "01"; -- Absorb
                 receive    <= '1';
+					 mux_select <= "01"; -- Absorb
 					 if message_end = '1' then -- NYOBA
 					   en_state_reg <= '1'; -- kalo message_end enable state reg
-						mux_select <= "11"; -- hold
-						if msg_count = "1000" then
-							done_pad_fromRX <= '1'; 
-						end if;
+						--if msg_count = "1000" then --DIGANTI NYOBA
+							--done_pad_fromRX <= '1'; 
+						--end if;
 					 else
 					   if msg_count = "1000" then
 							en_state_reg <= '1'; -- enable state reg kalau 8 byte
 						else
 							en_state_reg <= '0'; -- disable sampai 8 byte
 						end if;
-						mux_select <= "01"; -- Absorb
 					 end if;
 					 
 					 
