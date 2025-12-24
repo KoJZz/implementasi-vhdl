@@ -51,6 +51,7 @@ architecture RTL of ASCON_FSM is
 
     signal Current_State : State_Type;
     signal Next_State    : State_Type;
+	 signal s_rst_msg : std_logic;
 
 begin
 
@@ -99,8 +100,6 @@ begin
 								if msg_count /= "1000" then
 									Next_State <= SQUEEZING;
 								elsif msg_count = "1000" then
-									rst_msg    <= '1'; -- DI SINI COBA KELUARIN OUTPUT
-									done_pad_fromRX <= '1';
 									Next_State <= ASCON_P12_START;
 								end if;
                     else
@@ -141,7 +140,7 @@ begin
         appl_pad    <= '0';
         transmit    <= '0';
         en_output   <= '0';
-		  --done_pad_fromRX <= '0';
+		  done_pad_fromRX <= '0';
 
         case Current_State is
 
@@ -164,6 +163,12 @@ begin
                 if p12_done = '1' then
                     mux_select <= "10"; -- Load permutation result
                 end if;
+					 if Next_State = ASCON_P12_START then
+						rst_msg    <= '1'; -- DI SINI COBA KELUARIN OUTPUT
+						done_pad_fromRX <= '1';
+					 else
+						rst_msg <= '0';
+					 end if;
 
             when RX_MESSAGE =>
                 --mux_select <= "01"; -- Absorb

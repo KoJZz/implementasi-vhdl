@@ -17,17 +17,20 @@ begin
 
 	process(Clk, rst_msg)
 	begin
-		if rst_msg = '1' then
+		if rising_edge(Clk) then
+			if rst_msg = '1' then
             cnt <= (others => '0');
-		elsif rising_edge(Clk) then
-			if En_msg = '1' then
+			elsif En_msg = '1' then
 				if cnt /= "1000" then
-					cnt <= cnt + 1;
+						cnt <= cnt + 1;
 				else
 					cnt <= (others => '0'); -- Resets once it reaches 1000
-				end if;
+				end if; 
+			elsif En_msg = '0' then
+				cnt <= cnt;
 			end if;
 		end if;
+		
 	end process;
 	out4 <= std_logic_vector(cnt);
 end architecture;
