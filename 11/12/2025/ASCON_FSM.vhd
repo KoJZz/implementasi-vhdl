@@ -19,6 +19,7 @@ entity ASCON_FSM is
 		  msg_count 		: in  std_logic_vector (3 downto 0); -- added buat mekanik done padding dari rx
 
         -- Control outputs
+		  reading			: out std_logic; --tandain kalo udah 8 byte (ato msg end) dan data dipad
 		  en_state_reg		: out std_logic; --enable state register ketika msg_count = 8/end message saat RX_MESSAGE. Selain state itu selalu 1
 		  done_pad_fromRX : out std_logic;
         mux_select      : out std_logic_vector(1 downto 0);
@@ -141,6 +142,7 @@ begin
         transmit    <= '0';
         en_output   <= '0';
 		  done_pad_fromRX <= '0';
+		  reading <= '0'; -- BARU
 
         case Current_State is
 
@@ -154,7 +156,7 @@ begin
                 en_ascon   <= '1';  -- 1-cycle start pulse
                 rst_8      <= '1';
 					 if message_end /= '1' then
-						rst_msg    <= '1';
+						rst_msg    <= '1'; -- kyknya reset ini udah ga perlu
 					 end if;
                 mux_select <= "11"; -- HOLD
 
@@ -164,31 +166,32 @@ begin
                     mux_select <= "10"; -- Load permutation result
                 end if;
 					 if Next_State = ASCON_P12_START then
-						rst_msg    <= '1'; -- DI SINI COBA KELUARIN OUTPUT
+						rst_msg    <= '1'; -- kyknya reset ini udah ga perlu
 						done_pad_fromRX <= '1';
-						--mux_select <= "01"; -- Absorb
 					 else
 						rst_msg <= '0';
 					 end if;
 
             when RX_MESSAGE =>
-                --mux_select <= "01"; -- Absorb
                 receive    <= '1';
 					 mux_select <= "01"; -- Absorb
 					 if message_end = '1' then -- NYOBA
 					   en_state_reg <= '1'; -- kalo message_end enable state reg
+						reading <= '1'; -- pulse ke msg_reg
 					 else
 					   if msg_count = "1000" then
 							en_state_reg <= '1'; -- enable state reg kalau 8 byte
+							reading <= '1'; -- pulse ke msg_reg
 						else
 							en_state_reg <= '0'; -- disable sampai 8 byte
+							reading <= '0'; -- pulse ke msg_reg
 						end if;
 					 end if;
 					 
-            when PADDING =>
+            when PADDING => --literally this state kyknya ga perlu
                 mux_select <= "01";
                 receive    <= '1';
-                appl_pad   <= '1';
+                appl_pad   <= '1';  
 
             when SQUEEZING =>
                 mux_select <= "10";

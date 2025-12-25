@@ -27,7 +27,7 @@ begin
 	begin
 	if rising_edge(Clk) then
 		if En_msg = '1' then -- jika rising edge dan register ter-enable, maka buffer diupate dengan 8 bit data baru pada LSB dan sisa 56 bit diisi 0:55 bit yang lama
-			reg_data <= reg_data(55 downto 0) & new8;
+			reg_data <= reg_data(119 downto 0) & new8;
 			--reg_data <= new8 & reg_data(63 downto 8);
 		end if;
 	end if;
@@ -42,7 +42,7 @@ begin
 				byte_count <= byte_count - 8;
 			else
 				out_count <= std_logic_vector(byte_count(3 downto 0));
-				byte_count <= 0;
+				byte_count <= (others => '0');
 			end if;
 		end if;
 	end if;

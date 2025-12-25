@@ -23,6 +23,8 @@ entity datapath is
 		En_output : in std_logic;
 		done_pad_fromRX : in std_logic; -- dari FSM
 		en_state_reg : in std_logic; -- dari FSM buat enable state_reg
+		reading			: in std_logic; --tandain kalo udah 8 byte (ato msg end) dan data dipad
+
 		
 		-- out ke top/FSM
 		rx_done, tx_done : in std_logic;
@@ -44,7 +46,7 @@ architecture path of datapath is
 -- definsi signal
 signal absorbed_data, zero_out_320, state_reg_out, ascon_p_out : ascon_state_t;
 signal pad_out_64, message_reg_out, state_rate_out : std_logic_vector (63 downto 0);
-signal rx_byte_count: std_logic_vector (3 downto 0);
+signal rx_byte_count, s_temp_byt_count: std_logic_vector (3 downto 0);
 signal Reset, default_en, ascon_ready, s_done_pad_fromPad : std_logic;
 
 -- definisi component yang digunakan
@@ -108,9 +110,13 @@ end component;
 component message_register is
 	port (
 		Clk : in std_logic;
-		En_msg : in std_logic;
-		new8 : in std_logic_vector (7 downto 0); 
-		out64 : out std_logic_vector (63 downto 0) 
+		En_msg : in std_logic; -- uart rx done (terima 1 byte)
+		new8 : in std_logic_vector (7 downto 0); -- input 8 bit message yang diterima dari UART Rx
+		reading : in std_logic; -- nandain kalau data sedang dipake. Jika iya, countnya kurangin BARU
+		
+		-- output
+		out_count : out std_logic_vector (3 downto 0); -- count message yang sedang diproses BARU
+		out64 : out std_logic_vector (63 downto 0) -- output 64 bit blok message 
 	);
 end component;
 
@@ -206,7 +212,9 @@ msg_reg : message_register
 	port map(
 		Clk =>Clk, 
 		En_msg =>rx_done, 
-		new8 =>in_rx,  
+		new8 =>in_rx,
+		reading => reading, --kyknya ini dari FSM ngepulse
+		out_count => rx_byte_count, -- ini ke tempat2 sekarang msg_byt_count
 		out64 =>message_reg_out
 	);
 	
@@ -214,8 +222,8 @@ msg_byte_cnt : message_byte_counter
 	port map(
 		Clk	=>Clk,
 		En_msg =>rx_done, 
-		rst_msg =>rst_msg, -- belum ke-assign
-		out4 =>rx_byte_count
+		rst_msg =>rst_msg, -- kyknya ini udah ga perlu
+		out4 =>s_temp_byt_count -- ga kehubung ke mana-mana
 	);
 
 counter_8 : message_byte_counter
