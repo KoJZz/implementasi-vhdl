@@ -177,9 +177,6 @@ begin
 					 mux_select <= "01"; -- Absorb
 					 if message_end = '1' then -- NYOBA
 					   en_state_reg <= '1'; -- kalo message_end enable state reg
-						--if msg_count = "1000" then --DIGANTI NYOBA
-							--done_pad_fromRX <= '1'; 
-						--end if;
 					 else
 					   if msg_count = "1000" then
 							en_state_reg <= '1'; -- enable state reg kalau 8 byte
@@ -188,8 +185,6 @@ begin
 						end if;
 					 end if;
 					 
-					 
-
             when PADDING =>
                 mux_select <= "01";
                 receive    <= '1';
