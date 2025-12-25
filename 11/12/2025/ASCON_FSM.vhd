@@ -108,7 +108,7 @@ begin
                 end if;
 
             when RX_MESSAGE =>
-                if message_end = '1' OR msg_count = "1000" then
+                if message_end = '1' OR msg_count >= "1000" then
                     Next_State <= ASCON_P12_START; --tadinya PADDING, tp baru inget state PADDING ga perlu
                 end if;
 
