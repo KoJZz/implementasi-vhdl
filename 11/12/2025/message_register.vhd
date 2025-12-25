@@ -20,7 +20,8 @@ end entity;
 -- definisi architecture
 architecture structural of message_register is
 	signal reg_data : std_logic_vector(127 downto 0) := (others => '0'); -- signal untuk buffer data, 2 blok message buat jaga2
-	signal byte_count : unsigned (7 downto 0);
+	signal byte_count : unsigned (7 downto 0) := (others => '0');
+	signal s_out_count : std_logic_vector(3 downto 0) := (others => '0');
 	
 begin
 	process(Clk)
@@ -36,14 +37,20 @@ begin
 	process(Clk)
 	begin
 	if rising_edge(Clk) then
-		if reading = '1' then
-			if byte_count >= 8 then
-				out_count <= "1000";
-				byte_count <= byte_count - 8;
-			else
-				out_count <= std_logic_vector(byte_count(3 downto 0));
-				byte_count <= (others => '0');
-			end if;
+		if En_msg = '1' then
+			byte_count <= byte_count + 1;
+		end if;
+		
+		if byte_count >= 8 then
+			s_out_count <= "1000";
+		else
+			s_out_count <= std_logic_vector(byte_count(3 downto 0));
+		end if;
+		
+		out_count <= s_out_count;
+		
+		if reading = '1' and byte_count > 8 then
+			byte_count <= byte_count - resize(unsigned(s_out_count), 8);
 		end if;
 	end if;
 	end process;
